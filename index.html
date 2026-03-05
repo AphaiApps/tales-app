@@ -74,7 +74,7 @@
             <button class="btn-sub" onclick="addQuestion()">➕ Save Question</button>
         </div>
         <hr style="width:100%; margin: 20px 0;">
-        <h2>Delete Questions</h2>
+        <h2>Manage Current Questions</h2>
         <div id="admin-q-list" style="width:100%;"></div>
     </div>
 
@@ -99,7 +99,6 @@
     let activeCat = '';
     let currentQ = null;
 
-    // Load Data
     db.ref('answered').on('value', s => { answeredIds = s.val() || []; });
     db.ref('questions').on('value', s => {
         const data = s.val();
@@ -110,11 +109,51 @@
 
     function seedDatabase() {
         const initial = [
-            { id: Date.now()+1, cat: 'Kids', text: "If Leeloo could talk, what would her voice sound like?" },
-            { id: Date.now()+2, cat: 'Kids', text: "What makes you feel really brave?" },
-            { id: Date.now()+3, cat: 'Couples', text: "When do you feel most 'at home' with me?" },
-            { id: Date.now()+4, cat: 'Parents', text: "What was your first car and a story about it?" }
-            // Added 4 examples; you can add more here or via Admin UI
+            { id: 1, cat: 'Kids', text: "If Leeloo could talk, what would her voice sound like?" },
+            { id: 2, cat: 'Kids', text: "What makes you feel really brave, even when you're scared?" },
+            { id: 3, cat: 'Kids', text: "If you could make one rule everyone had to follow, what is it?" },
+            { id: 4, cat: 'Kids', text: "What's the best surprise you've ever had?" },
+            { id: 5, cat: 'Kids', text: "If you were the parent for a day, what would you make me do?" },
+            { id: 6, cat: 'Kids', text: "What is the kindest thing you saw someone do today?" },
+            { id: 7, cat: 'Kids', text: "If we could only eat one color of food all day, what color?" },
+            { id: 8, cat: 'Kids', text: "What is your favorite thing about yourself?" },
+            { id: 9, cat: 'Kids', text: "If you could build a secret room in our house, where?" },
+            { id: 10, cat: 'Kids', text: "What do you want to be famous for one day?" },
+            { id: 11, cat: 'Kids', text: "If you could talk to animals, which one first?" },
+            { id: 12, cat: 'Kids', text: "What's the funniest thing that happened at school this week?" },
+            { id: 13, cat: 'Kids', text: "If you could fly, where is the first place you'd go?" },
+            { id: 14, cat: 'Kids', text: "Tell me about a dream you had recently." },
+            { id: 15, cat: 'Kids', text: "What makes our family special?" },
+            { id: 16, cat: 'Couples', text: "What is a 'little thing' I do that you really love?" },
+            { id: 17, cat: 'Couples', text: "When do you feel most 'at home' or safe with me?" },
+            { id: 18, cat: 'Couples', text: "If we took 24 hours off from 'adulting', what would we do?" },
+            { id: 19, cat: 'Couples', text: "What memory of us always makes you laugh?" },
+            { id: 20, cat: 'Couples', text: "What's one dream you've put off that I can help with?" },
+            { id: 21, cat: 'Couples', text: "If we were in a movie, what genre would it be?" },
+            { id: 22, cat: 'Couples', text: "What is our biggest strength as a team?" },
+            { id: 23, cat: 'Couples', text: "What was your actual first impression of me?" },
+            { id: 24, cat: 'Couples', text: "If we won the lottery today, what's the first purchase?" },
+            { id: 25, cat: 'Couples', text: "What are you most proud of in our life together?" },
+            { id: 26, cat: 'Couples', text: "What is your favorite way to spend a rainy day?" },
+            { id: 27, cat: 'Couples', text: "If we lived anywhere for one year, where?" },
+            { id: 28, cat: 'Couples', text: "What's a new tradition you want to start?" },
+            { id: 29, cat: 'Couples', text: "What's the best advice we've ever received?" },
+            { id: 30, cat: 'Couples', text: "What are you most excited for in our future?" },
+            { id: 31, cat: 'Parents', text: "What was your first car and a crazy story about it?" },
+            { id: 32, cat: 'Parents', text: "What food did you eat as a kid that you now realize was weird?" },
+            { id: 33, cat: 'Parents', text: "What was the hardest decision you ever made?" },
+            { id: 34, cat: 'Parents', text: "What should Evelynn know about our family history?" },
+            { id: 35, cat: 'Parents', text: "What was your favorite song to dance to in high school?" },
+            { id: 36, cat: 'Parents', text: "What lesson from your parents do you still use?" },
+            { id: 37, cat: 'Parents', text: "Who was your best friend growing up?" },
+            { id: 38, cat: 'Parents', text: "What was your very first job?" },
+            { id: 39, cat: 'Parents', text: "What historical event do you remember most clearly?" },
+            { id: 40, cat: 'Parents', text: "What's the best trip you've ever taken?" },
+            { id: 41, cat: 'Parents', text: "What's a hobby you've always wanted to try?" },
+            { id: 42, cat: 'Parents', text: "What's your favorite memory of me as a kid?" },
+            { id: 43, cat: 'Parents', text: "What's the most important thing you've learned about life?" },
+            { id: 44, cat: 'Parents', text: "What's a dream you still have for yourself?" },
+            { id: 45, cat: 'Parents', text: "What is the one thing you are most proud of?" }
         ];
         initial.forEach(q => db.ref('questions').push(q));
     }
@@ -162,11 +201,11 @@
         if(!text) return;
         db.ref('questions').push({ id: Date.now(), cat: cat, text: text });
         document.getElementById('new-q-text').value = '';
-        alert("Question Saved!");
+        alert("Saved!");
     }
 
     function deleteQuestion(fKey) {
-        if(confirm("Delete this question permanently?")) {
+        if(confirm("Delete this question?")) {
             db.ref('questions/' + fKey).remove();
         }
     }
@@ -182,18 +221,4 @@
     }
 
     function viewAnswered() {
-        const gallery = document.getElementById('gallery');
-        gallery.innerHTML = '';
-        const pool = allQuestions.filter(q => q.cat === activeCat && answeredIds.includes(q.id));
-        if (pool.length === 0) {
-            gallery.innerHTML = '<div class="gallery-item"><div class="card"><h2>None yet!</h2></div></div>';
-        } else {
-            pool.reverse().forEach(q => {
-                gallery.innerHTML += `<div class="gallery-item"><div class="card"><h2>${q.text}</h2></div></div>`;
-            });
-        }
-        showScreen('answered-screen');
-    }
-</script>
-</body>
-</html>
+        const gallery =
