@@ -9,32 +9,31 @@
     <style>
         :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; --card-white: #ffffff; --danger: #e74c3c; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; color: var(--primary); overflow: hidden; }
-        .screen { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; flex: 1; text-align: center; overflow-y: auto; }
+        .screen { display: none; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px; flex: 1; text-align: center; overflow-y: auto; }
         .active { display: flex; }
-        .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 320px; }
+        .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 320px; z-index: 10; }
         button { padding: 18px; border: none; border-radius: 15px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; -webkit-tap-highlight-color: transparent; }
         .btn-main { background: var(--primary); color: white; }
         .btn-sub { background: var(--accent); color: white; }
-        .btn-back { background: none; border: 1px solid var(--primary); color: var(--primary); width: auto; padding: 10px 20px; margin-bottom: 20px; }
+        .btn-back { background: none; border: 1px solid var(--primary); color: var(--primary); width: auto; padding: 10px 20px; margin-bottom: 20px; margin-top: 10px; }
         .btn-danger { background: var(--danger); color: white; padding: 8px; font-size: 0.8rem; border-radius: 8px; width: auto; }
-        .card { background: var(--card-white); border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; min-height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; box-sizing: border-box; text-align: center; }
+        .card { background: var(--card-white); border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; min-height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; box-sizing: border-box; text-align: center; margin-top: 20px; }
         .gallery-wrapper { width: 100vw; overflow-x: scroll; display: flex; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding: 20px 0; }
         .gallery-item { flex: 0 0 80vw; margin: 0 10vw; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; }
-        input, select { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ccc; font-size: 1rem; box-sizing: border-box; }
-        .q-list-item { background: white; padding: 10px; margin-bottom: 5px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; text-align: left; width: 100%; max-width: 400px; font-size: 0.9rem; }
+        input, select { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ccc; font-size: 1rem; box-sizing: border-box; background: white; }
+        .q-list-item { background: white; padding: 10px; margin-bottom: 5px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; text-align: left; width: 100%; max-width: 400px; font-size: 0.9rem; border: 1px solid #eee; }
     </style>
 </head>
 <body>
 
 <div id="app" style="height: 100%; display: flex; flex-direction: column;">
-    
     <div id="home-screen" class="screen active">
-        <h1>Family Tales</h1>
+        <h1 style="margin-top:40px;">Family Tales</h1>
         <div class="btn-group">
             <button class="btn-main" onclick="openSubMenu('Kids')">👧 Evelynn (Kids)</button>
             <button class="btn-main" onclick="openSubMenu('Couples')">👩‍❤️‍👨 Samantha (Couples)</button>
             <button class="btn-main" onclick="openSubMenu('Parents')">👴 Mom & Dad</button>
-            <button style="background:none; color:#bdc3c7; font-size: 0.8rem; margin-top: 20px;" onclick="showScreen('admin-screen')">⚙️ Manage App</button>
+            <button id="admin-trigger" style="background:#bdc3c7; color:white; font-size: 0.8rem; margin-top: 40px; padding: 10px;" onclick="showScreen('admin-screen')">⚙️ Manage App</button>
         </div>
     </div>
 
@@ -58,6 +57,7 @@
 
     <div id="answered-screen" class="screen">
         <button class="btn-back" onclick="showScreen('sub-menu')">← Back</button>
+        <h2>Past Memories</h2>
         <div id="gallery" class="gallery-wrapper"></div>
     </div>
 
@@ -74,10 +74,9 @@
             <button class="btn-sub" onclick="addQuestion()">➕ Save Question</button>
         </div>
         <hr style="width:100%; margin: 20px 0;">
-        <h2>Manage Current Questions</h2>
+        <h2>Manage Current</h2>
         <div id="admin-q-list" style="width:100%;"></div>
     </div>
-
 </div>
 
 <script>
@@ -99,12 +98,18 @@
     let activeCat = '';
     let currentQ = null;
 
+    // DATA LOADING
     db.ref('answered').on('value', s => { answeredIds = s.val() || []; });
     db.ref('questions').on('value', s => {
         const data = s.val();
         allQuestions = data ? Object.keys(data).map(key => ({...data[key], firebaseKey: key})) : [];
-        if(allQuestions.length === 0) seedDatabase();
+        if(allQuestions.length === 0) {
+            console.log("Database empty. Seeding...");
+            seedDatabase();
+        }
         renderAdminList();
+    }, e => {
+        alert("Firebase Error: " + e.message);
     });
 
     function seedDatabase() {
@@ -221,4 +226,18 @@
     }
 
     function viewAnswered() {
-        const gallery =
+        const gallery = document.getElementById('gallery');
+        gallery.innerHTML = '';
+        const pool = allQuestions.filter(q => q.cat === activeCat && answeredIds.includes(q.id));
+        if (pool.length === 0) {
+            gallery.innerHTML = '<div class="gallery-item"><div class="card"><h2>None yet!</h2></div></div>';
+        } else {
+            pool.reverse().forEach(q => {
+                gallery.innerHTML += `<div class="gallery-item"><div class="card"><h2>${q.text}</h2></div></div>`;
+            });
+        }
+        showScreen('answered-screen');
+    }
+</script>
+</body>
+</html>
