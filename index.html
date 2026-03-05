@@ -16,11 +16,12 @@
         .btn-main { background: var(--primary); color: white; }
         .btn-sub { background: var(--accent); color: white; }
         .btn-back { background: none; border: 1px solid var(--primary); color: var(--primary); width: auto; padding: 10px 20px; margin-bottom: 20px; }
-        .card { background: var(--card-white); border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; box-sizing: border-box; text-align: center; transition: transform 0.3s; }
+        .btn-small { background: #e74c3c; color: white; padding: 10px; font-size: 0.8rem; margin-top: 15px; width: auto; min-width: 150px; }
+        .card { background: var(--card-white); border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; box-sizing: border-box; text-align: center; }
         .card h2 { font-size: 1.4rem; line-height: 1.5; margin: 0; color: var(--primary); }
         .gallery-wrapper { width: 100vw; overflow-x: scroll; display: flex; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding: 20px 0; }
         .gallery-wrapper::-webkit-scrollbar { display: none; }
-        .gallery-item { flex: 0 0 80vw; margin: 0 10vw; scroll-snap-align: center; display: flex; justify-content: center; }
+        .gallery-item { flex: 0 0 80vw; margin: 0 10vw; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         #q-count { margin-top: 15px; font-size: 0.9rem; color: #7f8c8d; font-weight: bold; }
     </style>
 </head>
@@ -79,7 +80,6 @@
     const db = firebase.database();
 
     const questions = [
-        // KIDS
         { id: 1, cat: 'Kids', text: "If Leeloo could talk, what would her voice sound like?" },
         { id: 2, cat: 'Kids', text: "What makes you feel really brave, even when you're scared?" },
         { id: 3, cat: 'Kids', text: "If you could make one rule everyone had to follow, what is it?" },
@@ -95,7 +95,6 @@
         { id: 13, cat: 'Kids', text: "If you could fly, where is the first place you'd go?" },
         { id: 14, cat: 'Kids', text: "Tell me about a dream you had recently." },
         { id: 15, cat: 'Kids', text: "What makes our family special?" },
-        // COUPLES
         { id: 16, cat: 'Couples', text: "What is a 'little thing' I do that you really love?" },
         { id: 17, cat: 'Couples', text: "When do you feel most 'at home' or safe with me?" },
         { id: 18, cat: 'Couples', text: "If we took 24 hours off from 'adulting', what would we do?" },
@@ -111,7 +110,6 @@
         { id: 28, cat: 'Couples', text: "What's a new tradition you want to start?" },
         { id: 29, cat: 'Couples', text: "What's the best advice we've ever received?" },
         { id: 30, cat: 'Couples', text: "What are you most excited for in our future?" },
-        // PARENTS
         { id: 31, cat: 'Parents', text: "What was your first car and a crazy story about it?" },
         { id: 32, cat: 'Parents', text: "What food did you eat as a kid that you now realize was weird?" },
         { id: 33, cat: 'Parents', text: "What was the hardest decision you ever made?" },
@@ -156,12 +154,8 @@
 
     function drawQuestion() {
         const pool = questions.filter(q => q.cat === activeCat && !answeredIds.includes(q.id));
-        const card = document.getElementById('main-card');
-        card.style.transform = 'scale(0.95)';
-        setTimeout(() => card.style.transform = 'scale(1)', 100);
-
         if (pool.length === 0) {
-            document.getElementById('q-text').innerText = "All caught up in " + activeCat + "!";
+            document.getElementById('q-text').innerText = "All caught up!";
             document.getElementById('done-btn').style.display = 'none';
             return;
         }
@@ -183,23 +177,29 @@
         drawQuestion();
     }
 
+    function unmarkAnswered(id) {
+        answeredIds = answeredIds.filter(val => val !== id);
+        db.ref('answered').set(answeredIds);
+        viewAnswered(); // Refresh the gallery
+    }
+
     function viewAnswered() {
         const gallery = document.getElementById('gallery');
         gallery.innerHTML = '';
         const pool = questions.filter(q => q.cat === activeCat && answeredIds.includes(q.id));
         
         if (pool.length === 0) {
-            gallery.innerHTML = '<div class="gallery-item"><div class="card"><h2>No memories here yet!</h2></div></div>';
+            gallery.innerHTML = '<div class="gallery-item"><div class="card"><h2>None here yet!</h2></div></div>';
         } else {
             pool.reverse().forEach(q => {
-                gallery.innerHTML += `<div class="gallery-item"><div class="card"><h2>${q.text}</h2></div></div>`;
+                gallery.innerHTML += `
+                    <div class="gallery-item">
+                        <div class="card"><h2>${q.text}</h2></div>
+                        <button class="btn-small" onclick="unmarkAnswered(${q.id})">↩️ Put back in rotation</button>
+                    </div>`;
             });
         }
         showScreen('answered-screen');
-    }
-
-    function goHome() {
-        showScreen('home-screen');
     }
 </script>
 </body>
