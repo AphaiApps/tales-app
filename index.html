@@ -7,22 +7,21 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; --card-white: #ffffff; }
+        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; --card-white: #ffffff; --danger: #e74c3c; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; color: var(--primary); overflow: hidden; }
-        .screen { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; flex: 1; text-align: center; }
+        .screen { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; flex: 1; text-align: center; overflow-y: auto; }
         .active { display: flex; }
-        .btn-group { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 320px; }
+        .btn-group { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 320px; }
         button { padding: 18px; border: none; border-radius: 15px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; -webkit-tap-highlight-color: transparent; }
         .btn-main { background: var(--primary); color: white; }
         .btn-sub { background: var(--accent); color: white; }
         .btn-back { background: none; border: 1px solid var(--primary); color: var(--primary); width: auto; padding: 10px 20px; margin-bottom: 20px; }
-        .btn-small { background: #e74c3c; color: white; padding: 10px; font-size: 0.8rem; margin-top: 15px; width: auto; min-width: 150px; }
-        .card { background: var(--card-white); border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; box-sizing: border-box; text-align: center; }
-        .card h2 { font-size: 1.4rem; line-height: 1.5; margin: 0; color: var(--primary); }
+        .btn-danger { background: var(--danger); color: white; padding: 8px; font-size: 0.8rem; border-radius: 8px; width: auto; }
+        .card { background: var(--card-white); border-radius: 20px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; min-height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; box-sizing: border-box; text-align: center; }
         .gallery-wrapper { width: 100vw; overflow-x: scroll; display: flex; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding: 20px 0; }
-        .gallery-wrapper::-webkit-scrollbar { display: none; }
-        .gallery-item { flex: 0 0 80vw; margin: 0 10vw; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #q-count { margin-top: 15px; font-size: 0.9rem; color: #7f8c8d; font-weight: bold; }
+        .gallery-item { flex: 0 0 80vw; margin: 0 10vw; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; }
+        input, select { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ccc; font-size: 1rem; box-sizing: border-box; }
+        .q-list-item { background: white; padding: 10px; margin-bottom: 5px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; text-align: left; width: 100%; max-width: 400px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -35,6 +34,7 @@
             <button class="btn-main" onclick="openSubMenu('Kids')">👧 Evelynn (Kids)</button>
             <button class="btn-main" onclick="openSubMenu('Couples')">👩‍❤️‍👨 Samantha (Couples)</button>
             <button class="btn-main" onclick="openSubMenu('Parents')">👴 Mom & Dad</button>
+            <button style="background:none; color:#bdc3c7; font-size: 0.8rem; margin-top: 20px;" onclick="showScreen('admin-screen')">⚙️ Manage App</button>
         </div>
     </div>
 
@@ -49,18 +49,33 @@
 
     <div id="new-question-screen" class="screen">
         <button class="btn-back" onclick="showScreen('sub-menu')">← Back</button>
-        <div class="card" id="main-card" onclick="drawQuestion()">
-            <h2 id="q-text">Tap the card to draw...</h2>
+        <div class="card" onclick="drawQuestion()">
+            <h2 id="q-text">Tap to Draw</h2>
         </div>
-        <button id="done-btn" class="btn-sub" style="margin-top:20px; background:#27ae60; display:none;" onclick="markDone()">✅ Mark as Answered</button>
-        <p id="q-count"></p>
+        <button id="done-btn" class="btn-sub" style="margin-top:20px; background:#27ae60; display:none;" onclick="markDone()">✅ Mark Answered</button>
+        <p id="q-count" style="margin-top:10px; opacity:0.6;"></p>
     </div>
 
     <div id="answered-screen" class="screen">
         <button class="btn-back" onclick="showScreen('sub-menu')">← Back</button>
-        <h2 style="margin-bottom:0;">Past Memories</h2>
         <div id="gallery" class="gallery-wrapper"></div>
-        <p style="margin-top:10px; opacity:0.6; font-size: 0.8rem;">← Swipe to Browse →</p>
+    </div>
+
+    <div id="admin-screen" class="screen">
+        <button class="btn-back" onclick="showScreen('home-screen')">← Back</button>
+        <h2>Add Question</h2>
+        <div class="btn-group">
+            <input type="text" id="new-q-text" placeholder="Type your question here...">
+            <select id="new-q-cat">
+                <option value="Kids">Evelynn (Kids)</option>
+                <option value="Couples">Samantha (Couples)</option>
+                <option value="Parents">Mom & Dad</option>
+            </select>
+            <button class="btn-sub" onclick="addQuestion()">➕ Save Question</button>
+        </div>
+        <hr style="width:100%; margin: 20px 0;">
+        <h2>Delete Questions</h2>
+        <div id="admin-q-list" style="width:100%;"></div>
     </div>
 
 </div>
@@ -79,59 +94,30 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const questions = [
-        { id: 1, cat: 'Kids', text: "If Leeloo could talk, what would her voice sound like?" },
-        { id: 2, cat: 'Kids', text: "What makes you feel really brave, even when you're scared?" },
-        { id: 3, cat: 'Kids', text: "If you could make one rule everyone had to follow, what is it?" },
-        { id: 4, cat: 'Kids', text: "What's the best surprise you've ever had?" },
-        { id: 5, cat: 'Kids', text: "If you were the parent for a day, what would you make me do?" },
-        { id: 6, cat: 'Kids', text: "What is the kindest thing you saw someone do today?" },
-        { id: 7, cat: 'Kids', text: "If we could only eat one color of food all day, what color?" },
-        { id: 8, cat: 'Kids', text: "What is your favorite thing about yourself?" },
-        { id: 9, cat: 'Kids', text: "If you could build a secret room in our house, where?" },
-        { id: 10, cat: 'Kids', text: "What do you want to be famous for one day?" },
-        { id: 11, cat: 'Kids', text: "If you could talk to animals, which one first?" },
-        { id: 12, cat: 'Kids', text: "What's the funniest thing that happened at school this week?" },
-        { id: 13, cat: 'Kids', text: "If you could fly, where is the first place you'd go?" },
-        { id: 14, cat: 'Kids', text: "Tell me about a dream you had recently." },
-        { id: 15, cat: 'Kids', text: "What makes our family special?" },
-        { id: 16, cat: 'Couples', text: "What is a 'little thing' I do that you really love?" },
-        { id: 17, cat: 'Couples', text: "When do you feel most 'at home' or safe with me?" },
-        { id: 18, cat: 'Couples', text: "If we took 24 hours off from 'adulting', what would we do?" },
-        { id: 19, cat: 'Couples', text: "What memory of us always makes you laugh?" },
-        { id: 20, cat: 'Couples', text: "What's one dream you've put off that I can help with?" },
-        { id: 21, cat: 'Couples', text: "If we were in a movie, what genre would it be?" },
-        { id: 22, cat: 'Couples', text: "What is our biggest strength as a team?" },
-        { id: 23, cat: 'Couples', text: "What was your actual first impression of me?" },
-        { id: 24, cat: 'Couples', text: "If we won the lottery today, what's the first purchase?" },
-        { id: 25, cat: 'Couples', text: "What are you most proud of in our life together?" },
-        { id: 26, cat: 'Couples', text: "What is your favorite way to spend a rainy day?" },
-        { id: 27, cat: 'Couples', text: "If we lived anywhere for one year, where?" },
-        { id: 28, cat: 'Couples', text: "What's a new tradition you want to start?" },
-        { id: 29, cat: 'Couples', text: "What's the best advice we've ever received?" },
-        { id: 30, cat: 'Couples', text: "What are you most excited for in our future?" },
-        { id: 31, cat: 'Parents', text: "What was your first car and a crazy story about it?" },
-        { id: 32, cat: 'Parents', text: "What food did you eat as a kid that you now realize was weird?" },
-        { id: 33, cat: 'Parents', text: "What was the hardest decision you ever made?" },
-        { id: 34, cat: 'Parents', text: "What should Evelynn know about our family history?" },
-        { id: 35, cat: 'Parents', text: "What was your favorite song to dance to in high school?" },
-        { id: 36, cat: 'Parents', text: "What lesson from your parents do you still use?" },
-        { id: 37, cat: 'Parents', text: "Who was your best friend growing up?" },
-        { id: 38, cat: 'Parents', text: "What was your very first job?" },
-        { id: 39, cat: 'Parents', text: "What historical event do you remember most clearly?" },
-        { id: 40, cat: 'Parents', text: "What's the best trip you've ever taken?" },
-        { id: 41, cat: 'Parents', text: "What's a hobby you've always wanted to try?" },
-        { id: 42, cat: 'Parents', text: "What's your favorite memory of me as a kid?" },
-        { id: 43, cat: 'Parents', text: "What's the most important thing you've learned about life?" },
-        { id: 44, cat: 'Parents', text: "What's a dream you still have for yourself?" },
-        { id: 45, cat: 'Parents', text: "What is the one thing you are most proud of?" }
-    ];
-
-    let activeCat = '';
+    let allQuestions = [];
     let answeredIds = [];
+    let activeCat = '';
     let currentQ = null;
 
-    db.ref('answered').on('value', (s) => { answeredIds = s.val() || []; });
+    // Load Data
+    db.ref('answered').on('value', s => { answeredIds = s.val() || []; });
+    db.ref('questions').on('value', s => {
+        const data = s.val();
+        allQuestions = data ? Object.keys(data).map(key => ({...data[key], firebaseKey: key})) : [];
+        if(allQuestions.length === 0) seedDatabase();
+        renderAdminList();
+    });
+
+    function seedDatabase() {
+        const initial = [
+            { id: Date.now()+1, cat: 'Kids', text: "If Leeloo could talk, what would her voice sound like?" },
+            { id: Date.now()+2, cat: 'Kids', text: "What makes you feel really brave?" },
+            { id: Date.now()+3, cat: 'Couples', text: "When do you feel most 'at home' with me?" },
+            { id: Date.now()+4, cat: 'Parents', text: "What was your first car and a story about it?" }
+            // Added 4 examples; you can add more here or via Admin UI
+        ];
+        initial.forEach(q => db.ref('questions').push(q));
+    }
 
     function showScreen(id) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -146,27 +132,20 @@
 
     function startNewQuestions() {
         showScreen('new-question-screen');
-        currentQ = null;
-        document.getElementById('q-text').innerText = "Tap to Draw";
-        document.getElementById('done-btn').style.display = 'none';
-        updateCount();
+        drawQuestion();
     }
 
     function drawQuestion() {
-        const pool = questions.filter(q => q.cat === activeCat && !answeredIds.includes(q.id));
+        const pool = allQuestions.filter(q => q.cat === activeCat && !answeredIds.includes(q.id));
         if (pool.length === 0) {
             document.getElementById('q-text').innerText = "All caught up!";
             document.getElementById('done-btn').style.display = 'none';
+            document.getElementById('q-count').innerText = "0 remaining";
             return;
         }
         currentQ = pool[Math.floor(Math.random() * pool.length)];
         document.getElementById('q-text').innerText = currentQ.text;
         document.getElementById('done-btn').style.display = 'block';
-        updateCount();
-    }
-
-    function updateCount() {
-        const pool = questions.filter(q => q.cat === activeCat && !answeredIds.includes(q.id));
         document.getElementById('q-count').innerText = pool.length + " remaining";
     }
 
@@ -177,26 +156,40 @@
         drawQuestion();
     }
 
-    function unmarkAnswered(id) {
-        answeredIds = answeredIds.filter(val => val !== id);
-        db.ref('answered').set(answeredIds);
-        viewAnswered(); // Refresh the gallery
+    function addQuestion() {
+        const text = document.getElementById('new-q-text').value;
+        const cat = document.getElementById('new-q-cat').value;
+        if(!text) return;
+        db.ref('questions').push({ id: Date.now(), cat: cat, text: text });
+        document.getElementById('new-q-text').value = '';
+        alert("Question Saved!");
+    }
+
+    function deleteQuestion(fKey) {
+        if(confirm("Delete this question permanently?")) {
+            db.ref('questions/' + fKey).remove();
+        }
+    }
+
+    function renderAdminList() {
+        const list = document.getElementById('admin-q-list');
+        list.innerHTML = allQuestions.map(q => `
+            <div class="q-list-item">
+                <span>[${q.cat}] ${q.text}</span>
+                <button class="btn-danger" onclick="deleteQuestion('${q.firebaseKey}')">🗑️</button>
+            </div>
+        `).join('');
     }
 
     function viewAnswered() {
         const gallery = document.getElementById('gallery');
         gallery.innerHTML = '';
-        const pool = questions.filter(q => q.cat === activeCat && answeredIds.includes(q.id));
-        
+        const pool = allQuestions.filter(q => q.cat === activeCat && answeredIds.includes(q.id));
         if (pool.length === 0) {
-            gallery.innerHTML = '<div class="gallery-item"><div class="card"><h2>None here yet!</h2></div></div>';
+            gallery.innerHTML = '<div class="gallery-item"><div class="card"><h2>None yet!</h2></div></div>';
         } else {
             pool.reverse().forEach(q => {
-                gallery.innerHTML += `
-                    <div class="gallery-item">
-                        <div class="card"><h2>${q.text}</h2></div>
-                        <button class="btn-small" onclick="unmarkAnswered(${q.id})">↩️ Put back in rotation</button>
-                    </div>`;
+                gallery.innerHTML += `<div class="gallery-item"><div class="card"><h2>${q.text}</h2></div></div>`;
             });
         }
         showScreen('answered-screen');
