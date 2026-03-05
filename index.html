@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Family Tales</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <style>
+        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        #app { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .card { background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 30px; box-sizing: border-box; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; position: relative; }
+        .card.flipping { transform: rotateY(360deg); }
+        h2 { color: var(--primary); font-size: 1.5rem; margin-bottom: 20px; line-height: 1.4; }
+        .btn-group { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 300px; }
+        button { padding: 18px; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-main { background: var(--primary); color: white; }
+        .btn-accent { background: var(--accent); color: white; margin-top: 20px; }
+        .btn-check { background: #27ae60; color: white; margin-top: 10px; font-size: 0.9rem; padding: 12px; }
+        .btn-back { position: absolute; top: 20px; left: 20px; background: none; color: var(--primary); font-size: 2rem; padding: 0; }
+        .count { margin-top: 15px; font-size: 0.8rem; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="home-screen" class="btn-group">
+        <h1 style="text-align:center; color: var(--primary);">Family Tales</h1>
+        <button class="btn-main" onclick="showCategory('Kids')">👧 Evelynn (Kids)</button>
+        <button class="btn-main" onclick="showCategory('Couples')">👩‍❤️‍👨 Samantha (Couples)</button>
+        <button class="btn-main" onclick="showCategory('Parents')">👴 Mom & Dad</button>
+    </div>
+
+    <div id="question-screen" style="display:none; width: 100%; display: flex; flex-direction: column; align-items: center;">
+        <button class="btn-back" onclick="goHome()">←</button>
+        <div id="card" class="card" onclick="nextQuestion()">
+            <h2 id="question-text">Tap to start!</h2>
+            <p id="category-label" style="color: var(--accent); font-weight: bold;"></p>
+        </div>
+        <button id="answer-btn" class="btn-check" onclick="markAnswered()" style="display:none;">✅ Mark as Answered</button>
+        <p class="count" id="remaining-count"></p>
+    </div>
+</div>
+
+<script>
+    // 1. FIREBASE CONFIGURATION
+    const firebaseConfig = {
+  apiKey: "AIzaSyCzR4mmI3TwYmRUShfQQnqjfVbww6lbp_E",
+  authDomain: "talessync-3427b.firebaseapp.com",
+  projectId: "talessync-3427b",
+  storageBucket: "talessync-3427b.firebasestorage.app",
+  messagingSenderId: "665087372237",
+  appId: "1:665087372237:web:7dfb6a733ca96b6e23f284",
+  measurementId: "G-1S2CXQ1RVE"
+};
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // 2. THE QUESTIONS (45 Curated Questions)
+    const questions = [
+        { id: 1, cat: 'Kids', text: "If our cat Leeloo could talk, what would her voice sound like?" },
+        { id: 2, cat: 'Kids', text: "What makes you feel really brave, even when you're scared?" },
+        { id: 3, cat: 'Kids', text: "If you could make one rule everyone in the world had to follow, what is it?" },
+        { id: 4, cat: 'Kids', text: "What's the best surprise you've ever had?" },
+        { id: 5, cat: 'Kids', text: "If you were the parent for a day, what would you make me do?" },
+        { id: 6, cat: 'Kids', text: "What is the kindest thing you saw someone do today?" },
+        { id: 7, cat: 'Kids', text: "If we could only eat one color of food all day, what color?" },
+        { id: 8, cat: 'Kids', text: "What is your favorite thing about yourself?" },
+        { id: 9, cat: 'Kids', text: "If you could build a secret room in our house, where would it be?" },
+        { id: 10, cat: 'Kids', text: "What do you want to be famous for when you grow up?" },
+        { id: 11, cat: 'Kids', text: "If you could talk to animals, which one would you talk to first?" },
+        { id: 12, cat: 'Kids', text: "What's the funniest thing that happened at school this week?" },
+        { id: 13, cat: 'Kids', text: "If you could fly, where is the first place you would go?" },
+        { id: 14, cat: 'Kids', text: "What is a dream you had recently?" },
+        { id: 15, cat: 'Kids', text: "What makes our family special?" },
+        
+        { id: 16, cat: 'Couples', text: "What is a 'little thing' I do that you really love?" },
+        { id: 17, cat: 'Couples', text: "When do you feel most 'at home' or safe with me?" },
+        { id: 18, cat: 'Couples', text: "If we could take a 24-hour break from 'adulting', what would we do?" },
+        { id: 19, cat: 'Couples', text: "What's a memory of us that always makes you laugh?" },
+        { id: 20, cat: 'Couples', text: "What's one dream you've been putting off that I can help you with?" },
+        { id: 21, cat: 'Couples', text: "If we were in a movie, what genre would it be?" },
+        { id: 22, cat: 'Couples', text: "What is our biggest strength as a team?" },
+        { id: 23, cat: 'Couples', text: "What was your first impression of me?" },
+        { id: 24, cat: 'Couples', text: "If we won the lottery today, what's the first thing we'd buy?" },
+        { id: 25, cat: 'Couples', text: "What's one thing you're most proud of in our life together?" },
+        { id: 26, cat: 'Couples', text: "What is your favorite way to spend a rainy day together?" },
+        { id: 27, cat: 'Couples', text: "If we could live anywhere in the world for one year, where?" },
+        { id: 28, cat: 'Couples', text: "What's a tradition you want to start for our family?" },
+        { id: 29, cat: 'Couples', text: "What's the best piece of advice we've ever received?" },
+        { id: 30, cat: 'Couples', text: "What is one thing you're excited for in our future?" },
+
+        { id: 31, cat: 'Parents', text: "What was your first car, and what's a crazy story about it?" },
+        { id: 32, cat: 'Parents', text: "What's a food you ate as a kid that you realized later was weird?" },
+        { id: 33, cat: 'Parents', text: "What was the hardest decision you ever made?" },
+        { id: 34, cat: 'Parents', text: "What's one thing you want Evelynn to know about our history?" },
+        { id: 35, cat: 'Parents', text: "What was your favorite song to dance to in high school?" },
+        { id: 36, cat: 'Parents', text: "What's a lesson your parents taught you that you still use?" },
+        { id: 37, cat: 'Parents', text: "Who was your best friend growing up?" },
+        { id: 38, cat: 'Parents', text: "What was your very first job?" },
+        { id: 39, cat: 'Parents', text: "What is a historical event you remember clearly?" },
+        { id: 40, cat: 'Parents', text: "What's the best trip you've ever taken?" },
+        { id: 41, cat: 'Parents', text: "What's a hobby you've always wanted to try?" },
+        { id: 42, cat: 'Parents', text: "What's your favorite family memory from when I was a kid?" },
+        { id: 43, cat: 'Parents', text: "What's the most important thing you've learned about life?" },
+        { id: 44, cat: 'Parents', text: "What's a dream you still have for yourself?" },
+        { id: 45, cat: 'Parents', text: "What's the one thing you're most proud of?" }
+    ];
+
+    let currentCategory = '';
+    let currentQuestion = null;
+    let answeredIds = [];
+
+    // 3. APP LOGIC
+    function showCategory(cat) {
+        currentCategory = cat;
+        document.getElementById('home-screen').style.display = 'none';
+        document.getElementById('question-screen').style.display = 'flex';
+        // Load answered data from Firebase
+        db.ref('answered').on('value', (snapshot) => {
+            answeredIds = snapshot.val() || [];
+            nextQuestion();
+        });
+    }
+
+    function nextQuestion() {
+        const available = questions.filter(q => q.cat === currentCategory && !answeredIds.includes(q.id));
+        const card = document.getElementById('card');
+        
+        card.classList.add('flipping');
+        setTimeout(() => {
+            if (available.length === 0) {
+                document.getElementById('question-text').innerText = "All caught up! You've answered everything in this set.";
+                document.getElementById('answer-btn').style.display = 'none';
+            } else {
+                currentQuestion = available[Math.floor(Math.random() * available.length)];
+                document.getElementById('question-text').innerText = currentQuestion.text;
+                document.getElementById('category-label').innerText = currentCategory;
+                document.getElementById('answer-btn').style.display = 'block';
+            }
+            document.getElementById('remaining-count').innerText = `${available.length} questions left`;
+            card.classList.remove('flipping');
+        }, 300);
+    }
+
+    function markAnswered() {
+        if (!currentQuestion) return;
+        answeredIds.push(currentQuestion.id);
+        db.ref('answered').set(answeredIds);
+        nextQuestion();
+    }
+
+    function goHome() {
+        document.getElementById('home-screen').style.display = 'flex';
+        document.getElementById('question-screen').style.display = 'none';
+    }
+</script>
+</body>
+</html>
